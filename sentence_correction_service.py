@@ -31,26 +31,28 @@ def correct_sentence(input_string, correct_typos=True):
     try:
         # Segment the string into words
         segmented = segment(input_string)
-    
+
         # Initialize spell checker
         spell = SpellChecker()
-    
+
         # Correct typos in each word if correct_typos is True
         corrected_words = [spell.correction(word) if correct_typos else word for word in segmented]
-    
+
         # Case correction (basic)
         corrected_case = []
         for word in corrected_words:
+            logger.debug(f"Processing word: {word}")  # Add this line for debugging
             if re.match(r'^i\b', word) or word in ['i']:
                 corrected_case.append(word.capitalize())
             else:
                 corrected_case.append(word.lower())
-    
+
         # Join the words into a sentence
         return ' '.join(corrected_case)
     except Exception as e:
         logger.error(f"Error in correct_sentence: {e}", exc_info=True)
         raise
+
         
 
 # Define the API endpoint
