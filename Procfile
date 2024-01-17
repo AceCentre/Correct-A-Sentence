@@ -1,1 +1,1 @@
-web: python sentence_correcion_service.py
+web: python sentence_correction_service.py
