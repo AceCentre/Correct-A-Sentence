@@ -36,16 +36,16 @@ def correct_sentence(input_string, correct_typos=True):
         spell = SpellChecker()
 
         # Correct typos in each word if correct_typos is True
-        corrected_words = [spell.correction(word) if correct_typos else word for word in segmented]
+        corrected_words = [spell.correction(word) if correct_typos else word for word in segmented if word is not None]
 
         # Case correction (basic)
         corrected_case = []
         for word in corrected_words:
-            logger.debug(f"Processing word: {word}")  # Add this line for debugging
-            if re.match(r'^i\b', word) or word in ['i']:
+            logger.debug(f"Processing word: {word}")
+            if word is not None and (re.match(r'^i\b', word) or word in ['i']):
                 corrected_case.append(word.capitalize())
             else:
-                corrected_case.append(word.lower())
+                corrected_case.append(word.lower() if word is not None else '')
 
         # Join the words into a sentence
         return ' '.join(corrected_case)
