@@ -1,0 +1,6 @@
+name: correct-a-sentence
+services:
+- name: web
+  github:
+    repo: AceCentre/Correct-A-Sentence
+    branch: main
