@@ -1,0 +1,5 @@
+Flask
+wordsegment
+pyspellchecker
+flask-restx
+importlib-metadata; python_version < "3.8"
