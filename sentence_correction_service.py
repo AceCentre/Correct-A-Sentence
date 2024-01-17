@@ -53,4 +53,4 @@ class SentenceCorrection(Resource):
         return {'corrected_sentence': corrected_sentence}
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(port=80, debug=False)
