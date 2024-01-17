@@ -1,1 +1,1 @@
-web: gunicorn --worker-tmp-dir /dev/shm --config gunicorn_config.py app:app
+web: python sentence_correcion_service.py
