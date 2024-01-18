@@ -5,3 +5,6 @@ A really simple REST API to take a string which may have no spaces in it, find t
 ## Spelling Mistakes corpus
 
 Directly from https://www.dcs.bbk.ac.uk/~ROGER/corpora.html
+
+And https://github.com/EducationalTestingService/TOEFL-Spell/tree/master
+
