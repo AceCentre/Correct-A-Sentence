@@ -2,3 +2,4 @@ Flask
 wordsegment
 pyspellchecker
 flask-restx
+gunicorn

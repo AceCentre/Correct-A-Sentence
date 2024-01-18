@@ -1,9 +1,11 @@
 from flask import Flask, request, jsonify
 from flask_restx import Api, Resource, fields
 import logging
-from wordsegment import load, segment
+import wordsegment
 from spellchecker import SpellChecker
 import re
+import json
+
 
 # Initialize Flask app and API
 app = Flask(__name__)
@@ -18,7 +20,13 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # Load necessary data for wordsegment
-load()
+wordsegment.load()
+
+# Load the modified unigrams and bigrams
+with open('modified_unigrams.json', 'r') as f:
+    wordsegment.UNIGRAMS = json.load(f)
+with open('modified_bigrams.json', 'r') as f:
+    wordsegment.BIGRAMS = json.load(f)
 
 # Define the API model
 sentence_model = api.model('Sentence', {
@@ -30,7 +38,7 @@ sentence_model = api.model('Sentence', {
 def correct_sentence(input_string, correct_typos=True):
     try:
         # Segment the string into words
-        segmented = segment(input_string)
+        segmented = wordsegment.segment(input_string)
 
         # Initialize spell checker
         spell = SpellChecker()
@@ -80,4 +88,4 @@ def default_error_handler(e):
         return {'message': message}, 500
 
 if __name__ == '__main__':
-    app.run(port=8080, debug=False)
+    app.run()
