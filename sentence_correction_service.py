@@ -221,6 +221,6 @@ def default_error_handler(e):
 
 if __name__ == '__main__':
     # Initialize T5 model and tokenizer
-    model, tokenizer = download_and_save_model(model_name='willwade/t5-small-spoken-typo', model_dir='./model')
+    #model, tokenizer = download_and_save_model(model_name='willwade/t5-small-spoken-typo', model_dir='./model')
     client = setup_openAI()
     app.run()
