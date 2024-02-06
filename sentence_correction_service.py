@@ -22,10 +22,6 @@ ns = api.namespace('correction', description='Sentence Corrections')
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# Initialize T5 model and tokenizer
-model_dir = './t5-small-finetuned-model'
-model = T5ForConditionalGeneration.from_pretrained(model_dir)
-tokenizer = T5Tokenizer.from_pretrained(model_dir)
 
 # Define the API model
 sentence_model = api.model('Sentence', {
@@ -43,6 +39,25 @@ with open('modified_bigrams.json', 'r') as f:
     wordsegment.BIGRAMS = json.load(f)
 
 
+def download_and_save_model(model_name='willwade/t5-small-spoken-typo', model_dir='./model'):
+    """
+    Downloads and caches the model and tokenizer, loading them from the cache if already downloaded.
+    
+    Args:
+    model_name (str): The name of the model on Hugging Face's model hub.
+    model_dir (str): The directory where the model and tokenizer should be saved.
+    """
+    # Ensure the cache directory exists
+    os.makedirs(model_dir, exist_ok=True)
+
+    # Download and cache the model and tokenizer, or load from local cache if already present
+    print("Checking for model and tokenizer in cache or downloading...")
+    model = T5ForConditionalGeneration.from_pretrained(model_name, cache_dir=model_dir)
+    tokenizer = T5Tokenizer.from_pretrained(model_name, cache_dir=model_dir)
+
+    print("Model and tokenizer are ready.")
+    return model, tokenizer
+    
 def setup_openAI():
     client = AzureOpenAI(
         api_key=os.getenv("AZURE_OPENAI_KEY"),  
@@ -98,7 +113,7 @@ with open('modified_bigrams.json', 'r') as f:
 sentence_model = api.model('Sentence', {
     'text': fields.String(required=True, description='The sentence to be corrected'),
     'correct_typos': fields.Boolean(required=False, default=True, description='Whether to correct typos'),
-    'correction_method': fields.String(required=False, description='Correction method: "gpt", "inbuilt", or "distilgpt2"', enum=['gpt', 'inbuilt', 'distilgpt2'])
+    'correction_method': fields.String(required=False, description='Correction method: "gpt", "inbuilt", or "t5small"', enum=['gpt', 'inbuilt', 't5small'])
 })
 
 # Define the main functionality
@@ -179,5 +194,7 @@ def default_error_handler(e):
         return {'message': message}, 500
 
 if __name__ == '__main__':
+    # Initialize T5 model and tokenizer
+    model, tokenizer = download_and_save_model(model_name='willwade/t5-small-spoken-typo', model_dir='./model')
     client = setup_openAI()
     app.run()
