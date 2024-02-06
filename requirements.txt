@@ -3,3 +3,6 @@ wordsegment
 pyspellchecker
 flask-restx
 gunicorn
+transformers
+torch
+AzureOpenAI

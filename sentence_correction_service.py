@@ -5,7 +5,73 @@ import wordsegment
 from spellchecker import SpellChecker
 import re
 import json
+from transformers import T5ForConditionalGeneration, T5Tokenizer
+import os
+from dotenv import load_dotenv
+from openai import AzureOpenAI
 
+# Load environment variables
+load_dotenv()
+
+# Initialize Flask app and API
+app = Flask(__name__)
+api = Api(app, version='1.0', title='Sentence Correction API', description='An API for correcting and segmenting sentences')
+ns = api.namespace('correction', description='Sentence Corrections')
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+# Initialize T5 model and tokenizer
+model_dir = './t5-small-finetuned-model'
+model = T5ForConditionalGeneration.from_pretrained(model_dir)
+tokenizer = T5Tokenizer.from_pretrained(model_dir)
+
+# Define the API model
+sentence_model = api.model('Sentence', {
+    'text': fields.String(required=True, description='The sentence to be corrected'),
+    'correct_typos': fields.Boolean(required=False, default=True, description='Whether to correct typos'),
+    'correction_method': fields.String(required=False, description='Correction method: "gpt", "inbuilt", or "t5small"', enum=['gpt', 'inbuilt', 't5small'])
+})
+
+# Load necessary data for wordsegment
+wordsegment.load()
+# Load the modified unigrams and bigrams
+with open('modified_unigrams.json', 'r') as f:
+    wordsegment.UNIGRAMS = json.load(f)
+with open('modified_bigrams.json', 'r') as f:
+    wordsegment.BIGRAMS = json.load(f)
+
+
+def setup_openAI():
+    client = AzureOpenAI(
+        api_key=os.getenv("AZURE_OPENAI_KEY"),  
+        api_version="2023-12-01-preview",
+        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
+    )
+    return client
+
+def correct_with_gpt(client,input_string):
+    try:
+        response = client.chat.completions.create(model="correctasentence", 
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant that corrects sentences with typos or spacing issues."},
+            {"role": "user", "content": input_string},
+        ])
+        # Assuming the structure of the response to access the corrected text
+        corrected_text = response.choices[0].message.content.strip()
+        return corrected_text
+    except Exception as e:
+        print(f"Error in correct_with_gpt: {e}")
+
+
+def create_corrector_pipeline(model_dir):
+    global corrector, tokenizer, model
+    print("Initializing the correction pipeline...")
+    model = T5ForConditionalGeneration.from_pretrained(model_dir)
+    tokenizer = T5Tokenizer.from_pretrained(model_dir)
+    corrector = pipeline('text-generation', model=model, tokenizer=tokenizer)
+    print("Pipeline ready.")
 
 # Initialize Flask app and API
 app = Flask(__name__)
@@ -31,7 +97,8 @@ with open('modified_bigrams.json', 'r') as f:
 # Define the API model
 sentence_model = api.model('Sentence', {
     'text': fields.String(required=True, description='The sentence to be corrected'),
-    'correct_typos': fields.Boolean(required=False, default=True, description='Whether to correct typos')
+    'correct_typos': fields.Boolean(required=False, default=True, description='Whether to correct typos'),
+    'correction_method': fields.String(required=False, description='Correction method: "gpt", "inbuilt", or "distilgpt2"', enum=['gpt', 'inbuilt', 'distilgpt2'])
 })
 
 # Define the main functionality
@@ -69,14 +136,38 @@ class SentenceCorrection(Resource):
     @api.expect(sentence_model)
     def post(self):
         try:
-            data = request.json
-            input_string = data.get('text', '')
-            correct_typos = data.get('correct_typos', True)
-            corrected_sentence = correct_sentence(input_string, correct_typos)
-            return {'corrected_sentence': corrected_sentence}
+            data = api.payload
+            input_string = data['text']
+            correction_method = data.get('correction_method', 'inbuilt').lower()
+
+            # Assuming correct_with_distilgpt2 is your method for correction
+            if correction_method == 't5small':
+                corrected_sentence = correct_with_t5small(input_string)
+            elif correction_method == 'gpt':
+                # Your GPT correction logic here
+                corrected_sentence = correct_with_gpt(client,input_string)
+            else:
+                # Your inbuilt method logic here
+                corrected_sentence = correct_sentence(input_string)
+
+            # Make sure to return a dictionary
+            return {'corrected_sentence': corrected_sentence}, 200
         except Exception as e:
             logger.error(f"Error in POST request: {e}", exc_info=True)
-            return jsonify(error=str(e)), 500
+            return {'error': str(e)}, 500
+
+
+def correct_with_t5small(input_sentence):
+    global tokenizer, model  # Ensuring we are using the global variables
+    
+    input_ids = tokenizer.encode(input_sentence, return_tensors="pt")
+    
+    # Generate the corrected sentence
+    output_ids = model.generate(input_ids, max_length=512)
+    corrected_text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
+
+    return corrected_text
+
 
 # Custom error handler
 @api.errorhandler
@@ -88,4 +179,5 @@ def default_error_handler(e):
         return {'message': message}, 500
 
 if __name__ == '__main__':
+    client = setup_openAI()
     app.run()
