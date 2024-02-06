@@ -6,3 +6,4 @@ gunicorn
 transformers
 torch
 AzureOpenAI
+Flask-HTTPAuth
