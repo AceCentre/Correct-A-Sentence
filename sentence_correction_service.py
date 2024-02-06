@@ -1,5 +1,7 @@
-from flask import Flask, request, jsonify
+import base64
+from flask import Flask, jsonify, request
 from flask_restx import Api, Resource, fields
+from flask_httpauth import HTTPBasicAuth
 import logging
 import wordsegment
 from spellchecker import SpellChecker
@@ -16,6 +18,8 @@ load_dotenv()
 # Initialize Flask app and API
 app = Flask(__name__)
 api = Api(app, version='1.0', title='Sentence Correction API', description='An API for correcting and segmenting sentences')
+auth = HTTPBasicAuth()
+USER_DATA = json.loads(os.getenv('USER_DATA'))
 ns = api.namespace('correction', description='Sentence Corrections')
 
 # Set up logging
@@ -143,34 +147,56 @@ def correct_sentence(input_string, correct_typos=True):
         logger.error(f"Error in correct_sentence: {e}", exc_info=True)
         raise
 
-        
 
+# Authentication verification callback
+@auth.verify_password
+def verify_password(auth_header):
+    try:
+        # Extract the base64-encoded username and password
+        encoded_credentials = auth_header.split(' ')[-1]
+        decoded_credentials = base64.b64decode(encoded_credentials).decode('utf-8')
+        username, password = decoded_credentials.split(':', 1)
+
+        # Check if the decoded username is in USER_DATA and compare the password
+        if username in USER_DATA:
+            return USER_DATA[username] == password
+
+    except Exception as e:
+        pass  # Handle exceptions, such as decoding errors or missing data
+
+    return False
 # Define the API endpoint
 @ns.route('/correct_sentence')
 class SentenceCorrection(Resource):
     @api.expect(sentence_model)
     def post(self):
-        try:
-            data = api.payload
-            input_string = data['text']
-            correction_method = data.get('correction_method', 'inbuilt').lower()
+        data = api.payload
+        input_string = data['text']
+        correction_method = data.get('correction_method', 'inbuilt').lower()
 
-            # Assuming correct_with_distilgpt2 is your method for correction
+        # Check if the correction method is 'gpt' and require authentication
+        if correction_method == 'gpt':
+            auth_header = request.headers.get('Authorization')
+            print("Auth Header:", auth_header)  # Add this line to print the auth header
+            if auth_header:
+                auth_result = verify_password(*auth_header.split(':', 1))
+                if not auth_result:
+                    return {"message": "Authentication Required"}, 401
+            else:
+                return {"message": "Authentication Required"}, 401
+
+        try:
             if correction_method == 't5small':
                 corrected_sentence = correct_with_t5small(input_string)
             elif correction_method == 'gpt':
-                # Your GPT correction logic here
-                corrected_sentence = correct_with_gpt(client,input_string)
+                corrected_sentence = correct_with_gpt(client, input_string)
             else:
-                # Your inbuilt method logic here
                 corrected_sentence = correct_sentence(input_string)
 
-            # Make sure to return a dictionary
             return {'corrected_sentence': corrected_sentence}, 200
         except Exception as e:
             logger.error(f"Error in POST request: {e}", exc_info=True)
             return {'error': str(e)}, 500
-
 
 def correct_with_t5small(input_sentence):
     global tokenizer, model  # Ensuring we are using the global variables
