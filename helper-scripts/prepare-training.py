@@ -14,7 +14,58 @@ import csv
 import glob
 import string
 
+# We will use python spellchecker but if its not great install aspell in your system
 useaspell = False
+
+# Ensure NLTK punkt tokenizer is downloaded
+nltk.download('punkt')
+
+spell = SpellChecker()
+
+# URLs for the typo data text files
+typo_urls = [
+    "https://www.dcs.bbk.ac.uk/~ROGER/missp.dat",
+    "https://www.dcs.bbk.ac.uk/~ROGER/holbrook-missp.dat",
+    "https://www.dcs.bbk.ac.uk/~ROGER/aspell.dat",
+    "https://www.dcs.bbk.ac.uk/~ROGER/wikipedia.dat"
+]
+
+# URL for the spoken data
+spoken_url = "https://aclanthology.org/attachments/I17-1099.Datasets.zip"
+# URL of the homophones CSV file
+homophones_url = "https://raw.githubusercontent.com/pimentel/homophones/master/homophones.csv"
+# BNC URL - NOTE: You get this after you sign the licence http://corpora.lancs.ac.uk/bnc2014/licence.php
+bnc_dir = "data/bnc2014spoken-xml"
+
+keyboard_layout = {
+    'a': ['q', 'w', 's', 'z'],
+    'b': ['v', 'g', 'h', 'n'],
+    'c': ['x', 'd', 'f', 'v'],
+    'd': ['s', 'e', 'r', 'f', 'c', 'x'],
+    'e': ['w', 'r', 'd', 's'],
+    'f': ['d', 'r', 't', 'g', 'v', 'c'],
+    'g': ['f', 't', 'y', 'h', 'b', 'v'],
+    'h': ['g', 'y', 'u', 'j', 'n', 'b'],
+    'i': ['u', 'o', 'k', 'j'],
+    'j': ['h', 'u', 'i', 'k', 'm', 'n'],
+    'k': ['j', 'i', 'o', 'l', 'm'],
+    'l': ['k', 'o', 'p'],
+    'm': ['n', 'j', 'k', 'l'],
+    'n': ['b', 'h', 'j', 'm'],
+    'o': ['i', 'p', 'l', 'k'],
+    'p': ['o', 'l'],
+    'q': ['w', 'a'],
+    'r': ['e', 't', 'f', 'd'],
+    's': ['a', 'w', 'e', 'd', 'x', 'z'],
+    't': ['r', 'y', 'g', 'f'],
+    'u': ['y', 'i', 'j', 'h'],
+    'v': ['c', 'f', 'g', 'b'],
+    'w': ['q', 'e', 's', 'a'],
+    'x': ['z', 's', 'd', 'c'],
+    'y': ['t', 'u', 'h', 'g'],
+    'z': ['a', 's', 'x'],
+}
+
 
    
 def bnc_parse_xml_to_phrases_and_write_to_csv(xml_directory, output_csv='output/processed_bnc2014.csv'):
@@ -38,26 +89,6 @@ def bnc_clean_and_chunk_utterance(text):
     return chunks
 
 
-# Ensure NLTK punkt tokenizer is downloaded
-nltk.download('punkt')
-
-spell = SpellChecker()
-
-# URLs for the typo data text files
-typo_urls = [
-    "https://www.dcs.bbk.ac.uk/~ROGER/missp.dat",
-    "https://www.dcs.bbk.ac.uk/~ROGER/holbrook-missp.dat",
-    "https://www.dcs.bbk.ac.uk/~ROGER/aspell.dat",
-    "https://www.dcs.bbk.ac.uk/~ROGER/wikipedia.dat"
-]
-
-# URL for the spoken data
-spoken_url = "https://aclanthology.org/attachments/I17-1099.Datasets.zip"
-# URL of the homophones CSV file
-homophones_url = "https://raw.githubusercontent.com/pimentel/homophones/master/homophones.csv"
-# BNC URL - NOTE: You get this after you sign the licence http://corpora.lancs.ac.uk/bnc2014/licence.php
-bnc_dir = "data/bnc2014spoken-xml"
-
 
 def parse_homophones_from_file(filepath):
     """
@@ -78,6 +109,25 @@ def ensure_no_numbers(sentence):
     words = sentence.split()
     validated_words = [word for word in words if is_valid_word(word)]
     return ' '.join(validated_words)
+
+def replace_one_homophone(sentence, homophones):
+    words = sentence.split()
+    new_sentence = []
+    replacement_made = False
+
+    for word in words:
+        if not replacement_made:
+            homophone_set = [homophone_list for homophone_list in homophones if word.lower() in homophone_list]
+            if homophone_set:
+                replacement_options = [homophone for homophone in homophone_set[0] if homophone.lower() != word.lower() and is_valid_word(homophone)]
+                if replacement_options:
+                    new_word = random.choice(replacement_options)
+                    new_sentence.append(new_word)
+                    replacement_made = True  # Ensure only one replacement is made
+                    continue
+        new_sentence.append(word)
+
+    return ' '.join(new_sentence)
 
 
 def replace_homophones(sentence, homophones, homonym_rate=0.05):
@@ -124,19 +174,8 @@ def augment_dataset(sentences, homophones, typo_dict, file_name, typo_rate=0.05)
             clean_sentence = re.sub(r'\s+', ' ', clean_sentence).strip()  # Replace one or more spaces with a single space
             clean_sentence = clean_sentence.replace("_", " ").replace("  ", " ").strip()
 
-            
-            # Apply calculated typos
-            typo_sentence = introduce_typos(clean_sentence, typo_rate)
-            
-            # Apply homonym replacement
-            homonym_sentence = replace_homophones(typo_sentence, homophones, homonym_rate=0.05)  # Adjust the rate as needed
-            
-            # Apply typo dictionary lookup and replacement
-            final_bad_sentence = apply_typo_dictionary(homonym_sentence, typo_dict).replace("_", " ")
-            final_bad_sentence = final_bad_sentence.replace("'", "")
-            #lastly lets just double make sure a change does occur
-            final_bad_sentence = ensure_modification(clean_sentence, final_bad_sentence, homophones, typo_dict)
-            final_bad_sentence = ensure_no_numbers(final_bad_sentence)
+            final_bad_sentence = controlled_modifications(clean_sentence, homophones, typo_dict)
+
             
             # Contracted version (no spaces)
             contracted_bad_sentence = final_bad_sentence.replace(" ", "")
@@ -149,37 +188,7 @@ def augment_dataset(sentences, homophones, typo_dict, file_name, typo_rate=0.05)
                 writer.writerow([contracted_bad_sentence, clean_sentence])  # Contracted version
                 writer.writerow([contracted_good_sentence, clean_sentence])  # Contracted version
 
-
-keyboard_layout = {
-    'a': ['q', 'w', 's', 'z'],
-    'b': ['v', 'g', 'h', 'n'],
-    'c': ['x', 'd', 'f', 'v'],
-    'd': ['s', 'e', 'r', 'f', 'c', 'x'],
-    'e': ['w', 'r', 'd', 's'],
-    'f': ['d', 'r', 't', 'g', 'v', 'c'],
-    'g': ['f', 't', 'y', 'h', 'b', 'v'],
-    'h': ['g', 'y', 'u', 'j', 'n', 'b'],
-    'i': ['u', 'o', 'k', 'j'],
-    'j': ['h', 'u', 'i', 'k', 'm', 'n'],
-    'k': ['j', 'i', 'o', 'l', 'm'],
-    'l': ['k', 'o', 'p'],
-    'm': ['n', 'j', 'k', 'l'],
-    'n': ['b', 'h', 'j', 'm'],
-    'o': ['i', 'p', 'l', 'k'],
-    'p': ['o', 'l'],
-    'q': ['w', 'a'],
-    'r': ['e', 't', 'f', 'd'],
-    's': ['a', 'w', 'e', 'd', 'x', 'z'],
-    't': ['r', 'y', 'g', 'f'],
-    'u': ['y', 'i', 'j', 'h'],
-    'v': ['c', 'f', 'g', 'b'],
-    'w': ['q', 'e', 's', 'a'],
-    'x': ['z', 's', 'd', 'c'],
-    'y': ['t', 'u', 'h', 'g'],
-    'z': ['a', 's', 'x'],
-}
-
-def introduce_typos(sentence, typo_rate=0.1, max_typos=2):
+def introduce_typos(sentence, typo_rate=0.1, max_typos=1):
     """Introduce advanced typos into a sentence, excluding numbers, with a limit on the number of typos."""
     new_sentence = []
     words = sentence.split()
@@ -316,6 +325,20 @@ def download_and_process_typo_data(urls):
                 # Your logic to check spelling and write to CSV
                 pass
 
+def controlled_modifications(sentence, homophones, typo_dict):
+    # Decide randomly whether to introduce a typo or a homophone replacement
+    if random.random() < 0.5:
+        # Introduce a typo with a 100% chance to ensure at least one is introduced
+        modified_sentence = introduce_typos(sentence, typo_rate=1.0, max_typos=1)
+    else:
+        # Replace one homophone
+        modified_sentence = replace_one_homophone(sentence, homophones)
+        if modified_sentence == sentence:
+            modified_sentence = introduce_typos(sentence, typo_rate=1.0, max_typos=1)
+
+    return modified_sentence
+
+    
 # Function to clean punctuation spacing
 def clean_punctuation_spacing(sentence):
     sentence = re.sub(r"\s+’\s+", "’", sentence)
@@ -437,28 +460,13 @@ def ensure_modification(original_sentence, modified_sentence, homophones, typo_d
 
 def force_change(sentence, homophones, typo_dict, typo_preference=0.8):
     """Force a change in the sentence with a preference for typos over homophones."""
-    words = sentence.split()
-    new_sentence = []
-
-    for i, word in enumerate(words):
-        if random.random() < typo_preference and word.lower() in typo_dict:
-            # Apply a typo with higher preference
-            new_word = random.choice(typo_dict[word.lower()])
-            new_sentence.append(new_word)
-        else:
-            # Attempt to apply a homophone change
-            homophone_list = next((h for h in homophones if word.lower() in h), None)
-            if homophone_list:
-                choices = [h for h in homophone_list if h.lower() != word.lower() and is_valid_word(h)]
-                if choices:
-                    new_word = random.choice(choices)
-                    new_sentence.append(new_word)
-                else:
-                    new_sentence.append(word)  # No suitable homophone found, keep original
-            else:
-                new_sentence.append(word)  # No homophone or typo applicable, keep original
-
-    return " ".join(new_sentence)
+    if random.random() < typo_preference:
+        modified_sentence = introduce_typos(sentence, typo_rate=1.0, max_typos=1)  # Force at least one typo
+    else:
+        modified_sentence = replace_homophones(sentence, homophones, homonym_rate=0.05)
+        if modified_sentence == sentence:
+               modified_sentence = introduce_typos(sentence, typo_rate=1.0, max_typos=1)  # Force at least one typo
+    return modified_sentence
 
 
     
@@ -488,7 +496,7 @@ bnc_sentences = read_sentences_from_csv('output/processed_bnc2014.csv')
 spoken_sentences.extend(bnc_sentences)  # Combine BNC sentences with spoken dataset sentences
 
 # Assuming BNC data is now in bnc_dataset directory
-augmented_bnc = augment_dataset(bnc_sentences, homophones, typo_dict,'output/data_augment.csv')
+augmented_bnc = augment_dataset(spoken_sentences, homophones, typo_dict,'output/data_augment.csv')
 
 
 print("All data processed and saved.")
