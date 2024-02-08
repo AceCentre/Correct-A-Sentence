@@ -12,10 +12,12 @@ import re
 import xml.etree.ElementTree as ET
 import csv
 import glob
+import string
 
 useaspell = False
 
-def bnc_parse_xml_to_phrases_and_write_to_csv(xml_directory, output_csv='processed_bnc2014.csv'):
+   
+def bnc_parse_xml_to_phrases_and_write_to_csv(xml_directory, output_csv='output/processed_bnc2014.csv'):
     xml_files = glob.glob(xml_directory + "*.xml")
     with open(output_csv, 'w', newline='', encoding='utf-8') as csvfile:
         csvwriter = csv.writer(csvfile)
@@ -54,7 +56,7 @@ spoken_url = "https://aclanthology.org/attachments/I17-1099.Datasets.zip"
 # URL of the homophones CSV file
 homophones_url = "https://raw.githubusercontent.com/pimentel/homophones/master/homophones.csv"
 # BNC URL - NOTE: You get this after you sign the licence http://corpora.lancs.ac.uk/bnc2014/licence.php
-bnc_dir = "bnc2014spoken-xml"
+bnc_dir = "data/bnc2014spoken-xml"
 
 
 def parse_homophones_from_file(filepath):
@@ -70,6 +72,12 @@ def parse_homophones_from_file(filepath):
         for row in reader:
             homophones.append(row)
     return homophones
+
+def ensure_no_numbers(sentence):
+    """Ensure that the sentence does not contain numbers."""
+    words = sentence.split()
+    validated_words = [word for word in words if is_valid_word(word)]
+    return ' '.join(validated_words)
 
 
 def replace_homophones(sentence, homophones, homonym_rate=0.05):
@@ -128,16 +136,18 @@ def augment_dataset(sentences, homophones, typo_dict, file_name, typo_rate=0.05)
             final_bad_sentence = final_bad_sentence.replace("'", "")
             #lastly lets just double make sure a change does occur
             final_bad_sentence = ensure_modification(clean_sentence, final_bad_sentence, homophones, typo_dict)
-            
+            final_bad_sentence = ensure_no_numbers(final_bad_sentence)
             
             # Contracted version (no spaces)
             contracted_bad_sentence = final_bad_sentence.replace(" ", "")
+            contracted_good_sentence = clean_sentence.replace(" ","").lower()
             
             # Check sentence length (in words) and ignore if not within 2-5 words
             if 2 <= len(clean_sentence.split()) <= 5:
                 # Write both original and final "bad" sentence to the CSV file
                 writer.writerow([final_bad_sentence, clean_sentence])  # Regular spacing
                 writer.writerow([contracted_bad_sentence, clean_sentence])  # Contracted version
+                writer.writerow([contracted_good_sentence, clean_sentence])  # Contracted version
 
 
 keyboard_layout = {
@@ -276,7 +286,7 @@ def is_correct_spelling(word):
 def download_and_process_typo_data(urls):
     for url in urls:
         filename = url.split('/')[-1]  # Extract filename from URL
-        local_path = f"spelling-mistakes/{filename}"  # Define local path to save file
+        local_path = f"data/spelling-mistakes/{filename}"  # Define local path to save file
 
         # Check if the file already exists to avoid re-downloading
         if not os.path.exists(local_path):
@@ -306,27 +316,6 @@ def download_and_process_typo_data(urls):
                 # Your logic to check spelling and write to CSV
                 pass
 
-# Function to introduce typos into a sentence
-def introduce_typos(sentence, typo_rate=0.1):
-    new_sentence = ""
-    for word in sentence.split():
-        if random.random() < typo_rate:
-            typo_type = random.choice(['swap', 'miss', 'add', 'wrong'])
-            if typo_type == 'swap' and len(word) > 1:
-                idx = random.randint(0, len(word) - 2)
-                word = word[:idx] + word[idx+1] + word[idx] + word[idx+2:]
-            elif typo_type == 'miss' and len(word) > 1:
-                idx = random.randint(0, len(word) - 1)
-                word = word[:idx] + word[idx+1:]
-            elif typo_type == 'add':
-                idx = random.randint(0, len(word) - 1)
-                word = word[:idx] + random.choice('abcdefghijklmnopqrstuvwxyz') + word[idx:]
-            elif typo_type == 'wrong' and len(word) > 1:
-                idx = random.randint(0, len(word) - 1)
-                word = word[:idx] + random.choice('abcdefghijklmnopqrstuvwxyz') + word[idx+1:]
-        new_sentence += word + " "
-    return new_sentence.strip()
-
 # Function to clean punctuation spacing
 def clean_punctuation_spacing(sentence):
     sentence = re.sub(r"\s+’\s+", "’", sentence)
@@ -341,7 +330,7 @@ def clean_punctuation_spacing(sentence):
 
 # Function to process dialogues from a file and save to CSV
 def process_and_save_spoken_data():
-    file_path = 'EMNLP_dataset/EMNLP_dataset/dialogues_text.txt'  # Adjust path as necessary
+    file_path = 'data/EMNLP_dataset/EMNLP_dataset/dialogues_text.txt'  # Adjust path as necessary
     data_pairs = process_dialogues_file(file_path)
     save_to_csv(data_pairs)
 
@@ -349,6 +338,7 @@ def clean_input(sentence):
     """Clean the input sentence by removing specific characters."""
     sentence = sentence.replace("’", "")  # Remove apostrophes
     sentence = sentence.replace(".", "")  # Remove periods
+    sentence = clean_punctuation_spacing(sentence)
     return sentence
 
 def process_dialogues(text):
@@ -378,7 +368,7 @@ def process_dialogues_file(file_path):
                 data_pairs.extend(process_dialogues(dialogue.strip()))
     return data_pairs
 
-def save_to_csv(data_pairs, output_file='processed_dialogues.csv'):
+def save_to_csv(data_pairs, output_file='output/processed_dialogues.csv'):
     """Save processed data pairs to a CSV file."""
     with open(output_file, 'w', newline='', encoding='utf-8') as file:
         writer = csv.DictWriter(file, fieldnames=["input", "target"])
@@ -410,7 +400,7 @@ def load_spoken_data_into_list(file_path):
             spoken_sentences.append(processed_line)
     return spoken_sentences
 
-def read_sentences_from_csv(csv_file='processed_bnc2014.csv'):
+def read_sentences_from_csv(csv_file='output/processed_bnc2014.csv'):
     sentences = []
     with open(csv_file, 'r', encoding='utf-8') as csvfile:
         csvreader = csv.reader(csvfile)
@@ -474,13 +464,13 @@ def force_change(sentence, homophones, typo_dict, typo_preference=0.8):
     
 # Assuming BNC data is now in the specified directory
 print('starting bnc')
-bnc_dir = "bnc2014spoken-xml"
-bnc_parse_xml_to_phrases_and_write_to_csv(bnc_dir + "/spoken/untagged/")
+bnc_dir = "data/bnc2014spoken-xml/"
+bnc_parse_xml_to_phrases_and_write_to_csv(bnc_dir + "spoken/untagged/")
 print('bnc done')
 # Process homophones
 homophones_filename = homophones_url.split('/')[-1]
-download_file_if_not_exists(homophones_url, f"{homophones_filename}")
-homophones = parse_homophones_from_file(homophones_filename)
+download_file_if_not_exists(homophones_url, f"data/{homophones_filename}")
+homophones = parse_homophones_from_file('data/'+homophones_filename)
 print('homophone done')
 # Download and process typo data, spoken data, and then augment and process BNC data
 download_and_process_typo_data(typo_urls)
@@ -492,13 +482,13 @@ print('download spoken')
 process_and_save_spoken_data()
 print('save spoken')
 
-spoken_sentences = load_spoken_data_into_list('EMNLP_dataset/EMNLP_dataset/dialogues_text.txt')
+spoken_sentences = load_spoken_data_into_list('data/EMNLP_dataset/EMNLP_dataset/dialogues_text.txt')
 print('spoken sentences done')
-bnc_sentences = read_sentences_from_csv('processed_bnc2014.csv')
+bnc_sentences = read_sentences_from_csv('output/processed_bnc2014.csv')
 spoken_sentences.extend(bnc_sentences)  # Combine BNC sentences with spoken dataset sentences
 
 # Assuming BNC data is now in bnc_dataset directory
-augmented_bnc = augment_dataset(bnc_sentences, homophones, typo_dict,'data_augment.csv')
+augmented_bnc = augment_dataset(bnc_sentences, homophones, typo_dict,'output/data_augment.csv')
 
 
 print("All data processed and saved.")
