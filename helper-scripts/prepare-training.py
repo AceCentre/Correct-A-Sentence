@@ -73,22 +73,13 @@ def parse_homophones_from_file(filepath):
 
 
 def replace_homophones(sentence, homophones, homonym_rate=0.05):
-    """
-    Replace words with their homophones at a specified rate.
-    
-    :param sentence: The sentence to process.
-    :param homophones: A list of lists, where each sublist contains words that are homophones.
-    :param homonym_rate: The probability with which to replace a word with its homophone.
-    :return: The sentence with some words replaced by their homophones.
-    """
     words = sentence.split()
     new_sentence = []
     for word in words:
         if random.random() < homonym_rate:  # Only replace at the specified rate
             homophone_set = [homophone_list for homophone_list in homophones if word.lower() in homophone_list]
             if homophone_set:
-                # Exclude the original word from the replacement options
-                replacement_options = [homophone for homophone in homophone_set[0] if homophone.lower() != word.lower()]
+                replacement_options = [homophone for homophone in homophone_set[0] if homophone.lower() != word.lower() and is_valid_word(homophone)]
                 if replacement_options:
                     new_word = random.choice(replacement_options)
                     new_sentence.append(new_word)
@@ -96,22 +87,23 @@ def replace_homophones(sentence, homophones, homonym_rate=0.05):
         new_sentence.append(word)
     return ' '.join(new_sentence)
 
+
 def apply_typo_dictionary(sentence, typo_dict):
     words = sentence.split()
     new_sentence = []
     for word in words:
-        # Check if the word has known typos
+        # Check if the word has known typos and select only valid ones
         if word.lower() in typo_dict:
-            # Randomly choose to use a typo or the correct word
-            if random.random() < 0.1:  # Adjust the probability as needed
-                # Randomly select a typo for the word
-                typo = random.choice(typo_dict[word.lower()])
+            valid_typos = [typo for typo in typo_dict[word.lower()] if is_valid_word(typo)]
+            if valid_typos and random.random() < 0.1:  # Adjust the probability as needed
+                typo = random.choice(valid_typos)
                 new_sentence.append(typo)
             else:
                 new_sentence.append(word)
         else:
             new_sentence.append(word)
     return ' '.join(new_sentence)
+
     
 def augment_dataset(sentences, homophones, typo_dict, file_name, typo_rate=0.05):  # Adjust typo_rate here
     with open(file_name, 'w', newline='', encoding='utf-8') as f:
@@ -177,36 +169,53 @@ keyboard_layout = {
     'z': ['a', 's', 'x'],
 }
 
+def introduce_typos(sentence, typo_rate=0.1, max_typos=2):
+    """Introduce advanced typos into a sentence, excluding numbers, with a limit on the number of typos."""
+    new_sentence = []
+    words = sentence.split()
+    typos_introduced = 0
 
-def introduce_typos(sentence, typo_rate=0.1):
-    """Introduce advanced typos into a sentence."""
-    new_sentence = ""
-    for word in sentence.split():
-        if random.random() < typo_rate:
+    for word in words:
+        if random.random() < typo_rate and typos_introduced < max_typos:
             typo_type = random.choice(['substitution', 'deletion', 'insertion', 'transposition', 'repeated_letters'])
-            # Ignore phonetic typo_type = random.choice(['substitution', 'deletion', 'insertion', 'transposition', 'phonetic', 'repeated_letters'])
+            modified_word = word  # Default to the original word
 
             if typo_type == 'substitution' and len(word) > 1:
                 idx = random.randint(0, len(word) - 1)
-                substitute_char = random.choice(keyboard_layout.get(word[idx], word[idx]))
-                word = word[:idx] + substitute_char + word[idx+1:]
-            elif typo_type == 'deletion' and len(word) > 1:
-                idx = random.randint(0, len(word) - 1)
-                word = word[:idx] + word[idx+1:]
+                substitute_char = random.choice(keyboard_layout.get(word[idx], [c for c in string.ascii_lowercase if c != word[idx]]))
+                modified_word = word[:idx] + substitute_char + word[idx+1:]
+
             elif typo_type == 'insertion':
                 idx = random.randint(0, len(word) - 1)
-                insert_char = random.choice(list(keyboard_layout.keys()))
-                word = word[:idx] + insert_char + word[idx:]
+                insert_char = random.choice([c for c in string.ascii_lowercase])  # Explicitly exclude digits
+                modified_word = word[:idx] + insert_char + word[idx:]
+
+            elif typo_type == 'deletion' and len(word) > 1:
+                idx = random.randint(0, len(word) - 1)
+                modified_word = word[:idx] + word[idx+1:]
+
             elif typo_type == 'transposition' and len(word) > 1:
                 idx = random.randint(0, len(word) - 2)
-                word = word[:idx] + word[idx+1] + word[idx] + word[idx+2:]
-            elif typo_type == 'phonetic' and len(word) > 1:
-                word = phonetic_replacement(word)
+                modified_word = word[:idx] + word[idx+1] + word[idx] + word[idx+2:]
+
             elif typo_type == 'repeated_letters' and len(word) > 1:
                 idx = random.randint(0, len(word) - 1)
-                word = word[:idx] + word[idx] + word[idx] + word[idx+1:]
-        new_sentence += word + " "
-    return new_sentence.strip()
+                modified_word = word[:idx] + word[idx] + word[idx] + word[idx+1:]
+
+            # Only count as a typo if the word was modified
+            if modified_word != word:
+                typos_introduced += 1
+                new_sentence.append(modified_word)
+            else:
+                new_sentence.append(word)
+        else:
+            new_sentence.append(word)
+
+    return " ".join(new_sentence)
+    
+def is_valid_word(word):
+    """Check if the word is valid (contains only letters)."""
+    return re.match("^[a-zA-Z]+$", word) is not None
     
     
 def phonetic_replacement(word):
@@ -436,41 +445,31 @@ def ensure_modification(original_sentence, modified_sentence, homophones, typo_d
         modified_sentence = force_change(modified_sentence, homophones, typo_dict)
     return modified_sentence
 
-def force_change(sentence, homophones, typo_dict):
+def force_change(sentence, homophones, typo_dict, typo_preference=0.8):
+    """Force a change in the sentence with a preference for typos over homophones."""
     words = sentence.split()
     new_sentence = []
 
     for i, word in enumerate(words):
-        operation_order = ['homophone', 'typo'] if random.random() < 0.5 else ['typo', 'homophone']
-
-        for operation in operation_order:
-            if operation == 'homophone':
-                # Attempt to apply a homophone change
-                homophone_list = next((h for h in homophones if word.lower() in h), None)
-                if homophone_list:
-                    choices = [h for h in homophone_list if h.lower() != word.lower()]
-                    if choices:
-                        new_word = random.choice(choices)
-                        new_sentence.append(new_word)
-                        break  # Exit the for loop after successful change
-            elif operation == 'typo' and word.lower() in typo_dict:
-                # Attempt to apply a typo
-                new_word = random.choice(typo_dict[word.lower()])
-                new_sentence.append(new_word)
-                break  # Exit the for loop after successful change
-
-        if len(new_sentence) == i:  # No change was made
-            # Append the original word if neither homophone nor typo was applied
-            new_sentence.append(word)
-
-    # Fallback if no changes were made to any word
-    if sentence == " ".join(new_sentence):
-        # Apply a simple typo to the first word
-        if len(words) > 0:
-            words[0] = words[0][:-1] if len(words[0]) > 1 else words[0] + 'a'  # Ensure there's a change
-            return " ".join(words)
+        if random.random() < typo_preference and word.lower() in typo_dict:
+            # Apply a typo with higher preference
+            new_word = random.choice(typo_dict[word.lower()])
+            new_sentence.append(new_word)
+        else:
+            # Attempt to apply a homophone change
+            homophone_list = next((h for h in homophones if word.lower() in h), None)
+            if homophone_list:
+                choices = [h for h in homophone_list if h.lower() != word.lower() and is_valid_word(h)]
+                if choices:
+                    new_word = random.choice(choices)
+                    new_sentence.append(new_word)
+                else:
+                    new_sentence.append(word)  # No suitable homophone found, keep original
+            else:
+                new_sentence.append(word)  # No homophone or typo applicable, keep original
 
     return " ".join(new_sentence)
+
 
     
 # Assuming BNC data is now in the specified directory
