@@ -184,9 +184,9 @@ def augment_dataset(sentences, homophones, typo_dict, file_name, typo_rate=0.05)
             # Check sentence length (in words) and ignore if not within 2-5 words
             if 2 <= len(clean_sentence.split()) <= 5:
                 # Write both original and final "bad" sentence to the CSV file
-                writer.writerow([final_bad_sentence, clean_sentence])  # Regular spacing
-                writer.writerow([contracted_bad_sentence, clean_sentence])  # Contracted version
-                writer.writerow([contracted_good_sentence, clean_sentence])  # Contracted version
+                writer.writerow(['grammar: '+final_bad_sentence, clean_sentence])  # Regular spacing
+                writer.writerow(['grammar: '+contracted_bad_sentence, clean_sentence])  # Contracted version
+                writer.writerow(['grammar: '+contracted_good_sentence, clean_sentence])  # Contracted version
 
 def introduce_typos(sentence, typo_rate=0.1, max_typos=1):
     """Introduce advanced typos into a sentence, excluding numbers, with a limit on the number of typos."""
