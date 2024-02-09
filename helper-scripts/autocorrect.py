@@ -9,7 +9,7 @@ text_buffer = []
 
 def correct_text(text):
     api_url = "https://api.openai.com/v1/chat/completions"
-    api_key = "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"  # Replace with your actual API key
+    api_key = "somekeyhere"  # Replace with your actual API key
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
