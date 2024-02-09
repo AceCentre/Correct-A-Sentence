@@ -221,10 +221,10 @@ def default_error_handler(e):
     if not app.config.get("DEBUG"):
         return {'message': message}, 500
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
     # Initialize T5 model and tokenizer
     #model, tokenizer = download_and_save_model(model_name='willwade/t5-small-spoken-typo', model_dir='./model')
-    logger.info("Main func ran")
-    client = setup_openAI()
-    logger.info("OpenAI setup")
-    app.run()
+logger.info("Main func ran")
+client = setup_openAI()
+logger.info("OpenAI setup")
+app.run()
