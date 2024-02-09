@@ -63,11 +63,13 @@ def download_and_save_model(model_name='willwade/t5-small-spoken-typo', model_di
     return model, tokenizer
     
 def setup_openAI():
+    logger.info("Setting up OpenAI")
     client = AzureOpenAI(
         api_key=os.getenv("AZURE_OPENAI_KEY"),  
         api_version="2023-12-01-preview",
         azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
     )
+    logger.info("1. Open AI Setup", client)
     return client
 
 def correct_with_gpt(client,input_string):
@@ -222,5 +224,7 @@ def default_error_handler(e):
 if __name__ == '__main__':
     # Initialize T5 model and tokenizer
     #model, tokenizer = download_and_save_model(model_name='willwade/t5-small-spoken-typo', model_dir='./model')
+    logger.info("Main func ran")
     client = setup_openAI()
+    logger.info("OpenAI setup")
     app.run()
