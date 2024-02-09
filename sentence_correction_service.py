@@ -42,25 +42,6 @@ with open('modified_unigrams.json', 'r') as f:
 with open('modified_bigrams.json', 'r') as f:
     wordsegment.BIGRAMS = json.load(f)
 
-
-def download_and_save_model(model_name='willwade/t5-small-spoken-typo', model_dir='./model'):
-    """
-    Downloads and caches the model and tokenizer, loading them from the cache if already downloaded.
-    
-    Args:
-    model_name (str): The name of the model on Hugging Face's model hub.
-    model_dir (str): The directory where the model and tokenizer should be saved.
-    """
-    # Ensure the cache directory exists
-    os.makedirs(model_dir, exist_ok=True)
-
-    # Download and cache the model and tokenizer, or load from local cache if already present
-    print("Checking for model and tokenizer in cache or downloading...")
-    model = T5ForConditionalGeneration.from_pretrained(model_name, cache_dir=model_dir)
-    tokenizer = T5Tokenizer.from_pretrained(model_name, cache_dir=model_dir)
-
-    print("Model and tokenizer are ready.")
-    return model, tokenizer
     
 def setup_openAI():
     # logger.info("Setting up OpenAI")
@@ -73,9 +54,8 @@ def setup_openAI():
     return client
 
 def correct_with_gpt(input_string):
-    client = setup_openAI()
     try:
-        response = client.chat.completions.create(model="correctasentence", 
+        response = azure_openai_client.chat.completions.create(model="correctasentence", 
         messages=[
             {"role": "system", "content": "You are a helpful assistant that corrects sentences with typos or spacing issues."},
             {"role": "user", "content": input_string},
@@ -86,43 +66,7 @@ def correct_with_gpt(input_string):
     except Exception as e:
         print(f"Error in correct_with_gpt: {e}")
 
-"""
-def create_corrector_pipeline(model_dir):
-    global corrector, tokenizer, model
-    print("Initializing the correction pipeline...")
-    model = T5ForConditionalGeneration.from_pretrained(model_dir)
-    tokenizer = T5Tokenizer.from_pretrained(model_dir)
-    corrector = pipeline('text-generation', model=model, tokenizer=tokenizer)
-    print("Pipeline ready.")
-"""
 
-# Initialize Flask app and API
-app = Flask(__name__)
-api = Api(app, version='1.0', title='Sentence Correction API',
-          description='An API for correcting and segmenting sentences')
-
-ns = api.namespace('correction', description='Sentence Corrections')
-
-
-# Set up logging
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
-
-# Load necessary data for wordsegment
-wordsegment.load()
-
-# Load the modified unigrams and bigrams
-with open('modified_unigrams.json', 'r') as f:
-    wordsegment.UNIGRAMS = json.load(f)
-with open('modified_bigrams.json', 'r') as f:
-    wordsegment.BIGRAMS = json.load(f)
-
-# Define the API model
-sentence_model = api.model('Sentence', {
-    'text': fields.String(required=True, description='The sentence to be corrected'),
-    'correct_typos': fields.Boolean(required=False, default=True, description='Whether to correct typos'),
-    'correction_method': fields.String(required=False, description='Correction method: "gpt", "inbuilt""', enum=['gpt', 'inbuilt'])
-})
 
 # Define the main functionality
 def correct_sentence(input_string, correct_typos=True):
@@ -166,7 +110,9 @@ def verify_password(auth_header):
             return USER_DATA[username] == password
 
     except Exception as e:
-        pass  # Handle exceptions, such as decoding errors or missing data
+        logger.error(f"Error in verify_password: {e}")
+        return False
+
 
     return False
 # Define the API endpoint
@@ -181,7 +127,6 @@ class SentenceCorrection(Resource):
         # Check if the correction method is 'gpt' and require authentication
         if correction_method == 'gpt':
             auth_header = request.headers.get('Authorization')
-            print("Auth Header:", auth_header)  # Add this line to print the auth header
             if auth_header:
                 auth_result = verify_password(*auth_header.split(':', 1))
                 if not auth_result:
@@ -200,18 +145,6 @@ class SentenceCorrection(Resource):
             logger.error(f"Error in POST request: {e}", exc_info=True)
             return {'error': str(e)}, 500
 
-"""
-def correct_with_t5small(input_sentence):
-    global tokenizer, model  # Ensuring we are using the global variables
-    
-    input_ids = tokenizer.encode(input_sentence, return_tensors="pt")
-    
-    # Generate the corrected sentence
-    output_ids = model.generate(input_ids, max_length=512)
-    corrected_text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
-
-    return corrected_text
-"""
 
 # Custom error handler
 @api.errorhandler
@@ -224,8 +157,6 @@ def default_error_handler(e):
 
 if __name__ == '__main__':
     # Initialize T5 model and tokenizer
-    #model, tokenizer = download_and_save_model(model_name='willwade/t5-small-spoken-typo', model_dir='./model')
-    # logger.info("Main func ran")
-    # client = setup_openAI()
+    azure_openai_client = setup_openAI()
     # logger.info("OpenAI setup")
     app.run()
