@@ -7,3 +7,5 @@ transformers
 torch
 AzureOpenAI
 Flask-HTTPAuth
+python-dotenv
+openai
