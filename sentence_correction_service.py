@@ -22,6 +22,19 @@ auth = HTTPBasicAuth()
 USER_DATA = json.loads(os.getenv('USER_DATA'))
 ns = api.namespace('correction', description='Sentence Corrections')
 
+def setup_openAI():
+    # logger.info("Setting up OpenAI")
+    client = AzureOpenAI(
+        api_key=os.getenv("AZURE_OPENAI_KEY"),  
+        api_version="2023-12-01-preview",
+        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
+    )
+    # logger.info("1. Open AI Setup", client)
+    return client
+
+
+azure_openai_client = setup_openAI()
+
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -43,17 +56,8 @@ with open('modified_bigrams.json', 'r') as f:
     wordsegment.BIGRAMS = json.load(f)
 
     
-def setup_openAI():
-    # logger.info("Setting up OpenAI")
-    client = AzureOpenAI(
-        api_key=os.getenv("AZURE_OPENAI_KEY"),  
-        api_version="2023-12-01-preview",
-        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
-    )
-    # logger.info("1. Open AI Setup", client)
-    return client
 
-def correct_with_gpt(input_string):
+def correct_with_gpt(azure_openai_client,input_string):
     try:
         response = azure_openai_client.chat.completions.create(model="correctasentence", 
         messages=[
@@ -136,7 +140,7 @@ class SentenceCorrection(Resource):
 
         try:
             if correction_method == 'gpt':
-                corrected_sentence = correct_with_gpt(input_string)
+                corrected_sentence = correct_with_gpt(azure_openai_client,input_string)
             else:
                 corrected_sentence = correct_sentence(input_string)
 
@@ -156,7 +160,4 @@ def default_error_handler(e):
         return {'message': message}, 500
 
 if __name__ == '__main__':
-    # Initialize T5 model and tokenizer
-    azure_openai_client = setup_openAI()
-    # logger.info("OpenAI setup")
     app.run()
