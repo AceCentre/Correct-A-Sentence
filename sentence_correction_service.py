@@ -61,7 +61,7 @@ def correct_with_gpt(azure_openai_client,input_string):
     try:
         response = azure_openai_client.chat.completions.create(model="correctasentence", 
         messages=[
-            {"role": "system", "content": "You are a helpful assistant that corrects sentences with typos or spacing issues."},
+            {"role": "system", "content": "You are a helpful assistant that corrects sentences with typos or spacing issues. If you don't know how to fix it just return the string unaffected"},
             {"role": "user", "content": input_string},
         ])
         # Assuming the structure of the response to access the corrected text
