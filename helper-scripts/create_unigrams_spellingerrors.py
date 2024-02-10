@@ -20,7 +20,7 @@ def process_spelling_file(file_path):
                 wordsegment.UNIGRAMS[misspelled_word] = correct_word_weight
 
 # Directory containing the spelling mistake files
-spelling_mistakes_dir = 'spelling-mistakes'
+spelling_mistakes_dir = 'data/spelling-mistakes'
 
 # Process each spelling mistake file
 for filename in os.listdir(spelling_mistakes_dir):

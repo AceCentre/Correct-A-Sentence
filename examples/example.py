@@ -4,11 +4,11 @@ import base64
 
 # Base URL of the Flask application
 BASE_URL = "http://127.0.0.1:5000/correction/correct_sentence"
-#BASE_URL = "https://correctasentence.acecentre.net/correction/correct_sentence"
+BASE_URL = "https://correctasentence.acecentre.net/correction/correct_sentence"
 
 # Headers for the request
 username = "azureUser"
-password = ""
+password = "ACGpDyk8Wqb6YgVu3L2NBF"
 encoded_credentials = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("utf-8")
 
 headers = {
