@@ -46,7 +46,7 @@ This script performs the following operations:
 
 #### The process to update the bigram/unigram list for wordsegment
 
-See create_unigrams_spellingerrors.py
+See create_unigrams_spellingerrors.py and format_toefl.py
 
 If I'm honest this needs more work
 
