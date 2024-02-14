@@ -6,9 +6,18 @@ import win32file
 import win32pipe
 import pywintypes
 import time
+import os
+
+
+if getattr(sys, 'frozen', False):
+    # If the application is running as a PyInstaller bundle
+    application_path = sys._MEIPASS
+else:
+    # If the application is running in a normal Python environment
+    application_path = os.path.dirname(os.path.abspath(__file__))
 
 # Setup logging
-logging.basicConfig(filename='client.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename=application_path+'\client.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 import time
 
