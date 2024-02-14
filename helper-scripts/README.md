@@ -33,41 +33,18 @@ pip install -r requirements.txt
 
 ### Usage
 
-```python
-python prepare-training.py
-```
 
-This script performs the following operations:
-
-- Processes data from the Daily Dialog and BNC Corpora 2014.
-- Introduces homonym and typo changes at a rate of approximately 0.05%.
-- Filters sentences to only include those with 2-5 words.
-- Generates a training file with these sentences and their compressed (no spaces) counterparts.
+- We used Google Colab for preparing the data. Take a look [here](https://colab.research.google.com/drive/1VkKU9KKIWkWQZ-pPzdDFLeRnwFxdWUtq?usp=sharing) (a backup of the notebook is in this repo too)
+- We then trained on a A100 lambdalabs machine which took around 3-6 hours. See Model-Train.pynb for details of what we used
 
 #### The process to update the bigram/unigram list for wordsegment
 
 See create_unigrams_spellingerrors.py and format_toefl.py
 
-If I'm honest this needs more work
-
+And also look at update_wordsegment.py
 
 ## Data Sources
 
 This project leverages various datasets to train models and test the effectiveness of AAC-like corpora enhancements. Below are the primary sources of our data:
 
-### Datasets for Spoken Language:
-
-- **DailyDialog**: A high-quality multi-turn dialog dataset that covers various topics in our daily life. It is useful for training models to understand and generate human-like conversational texts.
-  - Access it [here](https://aclanthology.org/I17-1099/).
-
-- **BNC Corpora 2014**: The British National Corpus (BNC) 2014 is a large, diverse collection of spoken and written texts in British English from the late twentieth century.
-  - Sign up and download [here](http://corpora.lancs.ac.uk/bnc2014/signup.php).
-
-### Datasets for Spelling Mistakes:
-
-- **Typo lists, Birkbeck, etc.**: These datasets contain lists of commonly misspelled words, making them invaluable for training models to recognize and correct spelling errors.
-  - Find these resources [here](https://www.dcs.bbk.ac.uk/~ROGER/corpora.html).
-- **TOEFL Spell** A dataset of Spelling Annotations for English language learner essays written for TOEFL exams.
-  - Find this [here](https://github.com/EducationalTestingService/TOEFL-Spell/tree/master) 
-
-Each dataset plays a crucial role in developing and refining the techniques used in this project to improve AAC systems' accuracy and usability. By incorporating real-world data from spoken dialogues and common spelling mistakes, we aim to create more robust and effective solutions for AAC users.
+For a full model card see https://huggingface.co/willwade/t5-small-spoken-typo
