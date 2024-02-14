@@ -1,8 +1,9 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import copy_metadata
 
-datas = [('t5-small-spoken-typo-tryagain', '')]
+datas = [('t5-small-spoken-typo-tryagain', 't5-small-spoken-typo-tryagain')]
 datas += copy_metadata('transformers', recursive=True)
+datas += copy_metadata('sentencepiece')
 
 a = Analysis(
     ['correctsentence.py'],
