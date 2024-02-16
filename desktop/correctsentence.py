@@ -3,6 +3,11 @@ import win32pipe, win32file, pywintypes, logging
 import sys
 import os
 
+"""
+Initializes the path to the application directory and T5 model file based on whether the app is 
+running as a frozen bundle or normally. Also initializes logging.
+
+"""
 if getattr(sys, 'frozen', False):
     # If the application is running as a PyInstaller bundle
     application_path = sys._MEIPASS
@@ -16,7 +21,7 @@ model_path = os.path.join(application_path, 't5-small-spoken-typo-tryagain')
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Initialize HappyTextToText
-happy_tt = HappyTextToText("T5", model_path)
+happy_tt = HappyTextToText("T5", 'willwade/t5-small-spoken-typo')
 args = TTSettings(num_beams=5, min_length=1)
 
 def correct_sentence(sentence):
@@ -27,6 +32,18 @@ def correct_sentence(sentence):
         logging.error(f"Error correcting sentence: {e}")
         return sentence  # Return the original sentence in case of error
 
+"""
+pipe_server creates a named pipe server that listens for sentences from a client.
+It corrects any sentences received using the correct_sentence function, 
+and sends the corrected sentence back to the client.
+
+The server runs in an infinite loop, creating a new named pipe and waiting for a 
+client connection each time. It reads sentences from the client, corrects them,
+and writes the corrected sentences back over the pipe.
+
+If any errors occur in communication over the pipe, they are logged and the server
+goes back to creating a new pipe and waiting for the next client connection.
+"""
 def pipe_server():
     pipe_name = r'\\.\pipe\SentenceCorrectorPipe'
     logging.info("Pipe Server: Creating named pipe...")
