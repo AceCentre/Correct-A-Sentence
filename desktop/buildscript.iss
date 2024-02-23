@@ -36,6 +36,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "dist\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs 
+Source: "assets\CorrectASentenceDemo.gridset"; DestDir: "{userappdata}\Correctsentence"; Flags: ignoreversion
 
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
@@ -45,7 +46,7 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\Correctsentence\correctsent
 Name: "{autodesktop}\client"; Filename: "{app}\client\client.exe"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\CreateGridset.exe"
+Filename: "{app}\CreateGridset\CreateGridset.exe"
 Filename: "{cmd}"; Parameters: "start""/b""cmd""/c""echo|set /p=Hello World|clip"; Flags: nowait skipifsilent
 Filename: "{app}\{#MyAppName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent unchecked
 Filename: "{app}\Correctsentence\correctsentence.exe"; Flags: nowait postinstall skipifsilent

@@ -1,4 +1,4 @@
-from happytransformer import HappyTextToText, TTSettings
+from transformers import T5Tokenizer, T5ForConditionalGeneration
 import win32pipe, win32file, pywintypes, logging
 import sys
 import os
@@ -15,18 +15,31 @@ else:
     # If the application is running in a normal Python environment
     application_path = os.path.dirname(os.path.abspath(__file__))
 
-model_path = os.path.join(application_path, 't5-small-spoken-typo-tryagain')
+model_path = os.path.join(application_path, 't5-small-spoken-typo')
 
-# Initialize logging
+# Initialize loggingIlikecheeese
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Initialize HappyTextToText
-happy_tt = HappyTextToText("T5", 'willwade/t5-small-spoken-typo')
-args = TTSettings(num_beams=5, min_length=1)
+tokenizer = T5Tokenizer.from_pretrained(model_path)
+model = T5ForConditionalGeneration.from_pretrained(model_path)
 
 def correct_sentence(sentence):
     try:
-        result = happy_tt.generate_text(f"grammar: {sentence}", args=args)
+    
+    # Prepare the input text with the "grammar: " prefix
+        input_text = "grammar: "+sentence
+        input_ids = tokenizer.encode(input_text, return_tensors="pt")
+        
+        # Generate text
+        # Adjust num_beams and min_length to your needs
+        output = model.generate(input_ids, num_beams=5, min_length=1, max_new_tokens=50, early_stopping=True)
+        
+        # Decode the generated text
+        decoded_output = tokenizer.decode(output[0], skip_special_tokens=True)
+
+        result = decoded_output
+        
         return result.text
     except Exception as e:
         logging.error(f"Error correcting sentence: {e}")
