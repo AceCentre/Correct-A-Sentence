@@ -40,7 +40,7 @@ def correct_sentence(sentence):
 
         result = decoded_output
         
-        return result.text
+        return result
     except Exception as e:
         logging.error(f"Error correcting sentence: {e}")
         return sentence  # Return the original sentence in case of error
