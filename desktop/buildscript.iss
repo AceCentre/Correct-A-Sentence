@@ -43,8 +43,9 @@ Source: "dist\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
 Name: "{group}\{#MyAppName}"; Filename: "{app}\Correctsentence\correctsentence.exe"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\Correctsentence\correctsentence.exe"; Tasks: desktopicon
 Name: "{autodesktop}\client"; Filename: "{app}\client\client.exe"; Tasks: desktopicon
+
 [Run]
 Filename: "{app}\CreateGridset.exe"
 Filename: "{cmd}"; Parameters: "start""/b""cmd""/c""echo|set /p=Hello World|clip"; Flags: nowait skipifsilent
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent unchecked
+Filename: "{app}\{#MyAppName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent unchecked
 Filename: "{app}\Correctsentence\correctsentence.exe"; Flags: nowait postinstall skipifsilent
