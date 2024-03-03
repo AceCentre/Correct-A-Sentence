@@ -1,14 +1,19 @@
 # -*- mode: python ; coding: utf-8 -*-
+from PyInstaller.utils.hooks import copy_metadata
 
-datas = [(r'C:\Users\willwade\AppData\Roaming\Python\Python38\site-packages\onnxruntime\capi\*.dll', 'onnxruntime\capi')]
-datas += [(r'C:\Users\willwade\AppData\Roaming\Python\Python38\site-packages\onnxruntime\capi\*.pyd', 'onnxruntime\capi')]
-datas += [('models','models')]
-
+datas = [('t5-small-spoken-typo', 't5-small-spoken-typo')]
+datas += copy_metadata('transformers', recursive=True)
+datas += copy_metadata('sentencepiece')
+datas += copy_metadata('pyarrow')
+    
 a = Analysis(
     ['correctsentence.py'],
     pathex=[],
     binaries=[],
     datas=datas,
+    module_collection_mode={
+        'datasets': 'pyz+py',
+    },
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

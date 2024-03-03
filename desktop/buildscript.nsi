@@ -28,7 +28,7 @@ Section "Main Program" SEC01
     File "assets\CorrectASentenceDemo.gridset"
     ExecWait '"$SYSDIR\cmd.exe" "/c echo|set /p=Hello World|clip"'
     ExecWait '"$INSTDIR\CreateGridset\CreateGridset.exe"'
-    ExecWait '"$WINDIR\System32\cmd.exe" "/c start "" /B cmd /c "$INSTDIR\correctsentence\correctsentence.exe""'
+    ExecWait '"$WINDIR\System32\cmd.exe" "/c start /MIN "" cmd /c "$INSTDIR\correctsentence\correctsentence.exe""'
 
     WriteUninstaller "$INSTDIR\uninst.exe"
     SetShellVarContext current ; Ensure shortcuts and other context-sensitive actions target the current user

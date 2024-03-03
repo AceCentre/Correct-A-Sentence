@@ -27,8 +27,7 @@ exe = EXE(
     upx=True,
     console=False,
     disable_windowed_traceback=False,
-    argv_emulation=False,
-    target_arch=None,
+    argv_emulation=True,
     codesign_identity=None,
     entitlements_file=None,
 )
