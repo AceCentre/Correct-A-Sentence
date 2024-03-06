@@ -7,7 +7,7 @@ datas += copy_metadata('sentencepiece')
 datas += copy_metadata('pyarrow')
     
 a = Analysis(
-    ['correctsentence.py'],
+    ['correctsentence_full.py'],
     pathex=[],
     binaries=[],
     datas=datas,

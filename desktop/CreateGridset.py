@@ -39,7 +39,7 @@ def modify_gridset(gridset_path, LocalAppPath):
 					filedata = f.read()
 				
 				local_app_data_path = os.environ.get('LOCALAPPDATA', '')
-				full_path_to_exe = os.path.join(local_app_data_path, 'Programs', 'Ace Centre', 'Correctsentence', 'correctsentence.exe')
+				full_path_to_exe = os.path.join(local_app_data_path, 'Programs', 'Ace Centre', 'Correctsentence', 'client.exe')
 				full_path_to_exe_escaped = full_path_to_exe.replace('\\', '\\\\')
 				new_data = re.sub('%FILEPATHTOREPLACE%', full_path_to_exe_escaped, filedata)
 							
