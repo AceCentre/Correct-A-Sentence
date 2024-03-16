@@ -126,8 +126,12 @@ class SentenceCorrection(Resource):
     def post(self):
         data = api.payload
         input_string = data['text']
+        input_string = data['text'].strip() 
         correction_method = data.get('correction_method', 'inbuilt').lower()
-
+        # Check if the input string is empty after stripping whitespace
+        if not input_string:
+            return {'corrected_sentence': ''}, 200
+            
         # Check if the correction method is 'gpt' and require authentication
         if correction_method == 'gpt':
             auth_header = request.headers.get('Authorization')
