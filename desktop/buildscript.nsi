@@ -36,6 +36,17 @@ Section "Main Program" SEC01
     CreateShortCut "$SMPROGRAMS\${MyAppName}\${MyAppName}.lnk" "$INSTDIR\correctsentence\correctsentence.exe"
     CreateShortCut "$DESKTOP\${MyAppName}.lnk" "$INSTDIR\correctsentence\correctsentence.exe"
     CreateShortCut "$DESKTOP\Client.lnk" "$INSTDIR\client\client.exe"
+    
+    ; Write the uninstall keys for Windows
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${MyAppName}" "DisplayName" "${MyAppName} ${MyAppVersion}"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${MyAppName}" "UninstallString" "$\"$INSTDIR\uninst.exe$\""
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${MyAppName}" "Publisher" "${MyAppPublisher}"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${MyAppName}" "URLInfoAbout" "${MyAppURL}"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${MyAppName}" "DisplayVersion" "${MyAppVersion}"
+    WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${MyAppName}" "NoModify" 1
+    WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${MyAppName}" "NoRepair" 1
+    ; Optionally, set the estimated size of the app, in KB
+    WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${MyAppName}" "EstimatedSize" 737280
 SectionEnd
 
 Section "Uninstall"
@@ -45,4 +56,6 @@ Section "Uninstall"
 
     Delete "$DESKTOP\${MyAppName}.lnk"
     Delete "$DESKTOP\Client.lnk"
+    
+    DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${MyAppName}"
 SectionEnd
