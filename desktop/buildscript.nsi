@@ -24,7 +24,7 @@ Section "Main Program" SEC01
     File /r "dist\client\*"
     SetOutPath "$INSTDIR\CreateGridset"
     File /r "dist\CreateGridset\*"
-    SetOutPath "$APPDATA\Correctsentence"
+    SetOutPath "$APPDATA\Ace Centre\CorrectSentence"
     File "assets\CorrectASentenceDemo.gridset"
     ExecWait '"$SYSDIR\cmd.exe" "/c echo|set /p=Hello World|clip"'
     ExecWait '"$INSTDIR\CreateGridset\CreateGridset.exe"'
