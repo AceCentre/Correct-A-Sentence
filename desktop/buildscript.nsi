@@ -9,7 +9,7 @@ Outfile "CorrectSentenceInstaller.exe"
 RequestExecutionLevel user ; Request non-elevated installation
 
 ; Set the default installation directory
-InstallDir "$LOCALAPPDATA\${MyAppName}"
+InstallDir "$LOCALAPPDATA\Ace Centre\${MyAppName}"
 
 !insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_INSTFILES
